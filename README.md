@@ -1,66 +1,99 @@
-## Foundry
+# Assignment 2 — DeFi Protocol Development (AMM / DEX)
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Blockchain Technologies 2, Weeks 3-5
 
-Foundry consists of:
+## Project Overview
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+This project contains:
+- ERC-20 token contracts with unit, fuzz, and invariant tests
+- Constant Product AMM (x * y = k) with LP tokens
+- Lending/Borrowing protocol with liquidation
+- Fork tests against Ethereum mainnet (Uniswap V2, USDC)
+- CI/CD pipeline with GitHub Actions and Slither
 
-## Documentation
+## Prerequisites
 
-https://book.getfoundry.sh/
+- Foundry (forge, cast, anvil): https://book.getfoundry.sh/getting-started/installation
+- Alchemy or Infura API key for fork tests: https://www.alchemy.com/
 
-## Usage
-
-### Build
-
-```shell
-$ forge build
-```
-
-### Test
+## Setup
 
 ```shell
-$ forge test
+git clone <repo-url>
+cd Assignment_2
+forge install
+forge build
 ```
 
-### Format
+## Running Tests
+
+Run all tests except fork tests (no RPC needed):
 
 ```shell
-$ forge fmt
+forge test -vvv --no-match-contract "ForkTest"
 ```
 
-### Gas Snapshots
+Run fork tests (requires Ethereum mainnet RPC):
 
 ```shell
-$ forge snapshot
+export ETH_RPC_URL="https://eth-mainnet.g.alchemy.com/v2/YOUR_API_KEY"
+forge test -vvv --match-contract "ForkTest"
 ```
 
-### Anvil
+Run all tests at once:
 
 ```shell
-$ anvil
+export ETH_RPC_URL="https://eth-mainnet.g.alchemy.com/v2/YOUR_API_KEY"
+forge test -vvv
 ```
 
-### Deploy
+## Gas Report
 
 ```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+forge test --gas-report --no-match-contract "ForkTest"
 ```
 
-### Cast
+## Coverage Report
 
 ```shell
-$ cast <subcommand>
+forge coverage
 ```
 
-### Help
+## Gas Snapshot
 
 ```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+forge snapshot --no-match-contract "ForkTest"
 ```
+
+## Project Structure
+
+```
+src/
+  SimpleToken.sol     - ERC-20 token (Task 1)
+  Tokens.sol          - TokenA and TokenB for AMM/Lending
+  LPToken.sol         - LP token with access control
+  AMM.sol             - Constant Product AMM (Task 3)
+  LendingPool.sol     - Lending/borrowing protocol (Task 5)
+
+test/
+  SimpleToken.t.sol   - 13 tests (unit + fuzz + invariant)
+  AMM.t.sol           - 15 tests (unit + fuzz)
+  LendingPool.t.sol   - 12 tests
+  ForkTest.t.sol      - 3 mainnet fork tests (Task 2)
+
+docs/
+  AMM_Analysis.md             - AMM mathematical analysis (Task 4)
+  LendingPool_Workflow.md     - Lending pool workflow diagram
+  Fuzz_vs_Unit_Testing.md     - Fuzz vs unit testing explanation
+  Fork_Testing.md             - Fork testing explanation
+  CI_CD_Pipeline.md           - CI/CD pipeline documentation
+  REPORT.md                   - Full assignment report
+
+.github/workflows/test.yml   - GitHub Actions CI pipeline (Task 6)
+```
+
+## Built With
+
+- Foundry (Forge, Cast, Anvil)
+- OpenZeppelin Contracts
+- Solidity 0.8.19
