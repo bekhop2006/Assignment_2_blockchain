@@ -96,12 +96,15 @@ contract SimpleTokenTest is Test {
     }
 
     // Invariant tests
-    function invariantTotalSupplyNonNegative() public view {
-        assertGe(token.totalSupply(), 0);
+    function invariantTotalSupplyConsistent() public view {
+        // No address can hold more than the total supply
+        assertLe(token.balanceOf(alice), token.totalSupply());
+        assertLe(token.balanceOf(bob), token.totalSupply());
     }
 
-    function invariantBalancesNonNegative() public view {
-        assertGe(token.balanceOf(alice), 0);
-        assertGe(token.balanceOf(bob), 0);
+    function invariantTotalSupplyMinimum() public view {
+        // Total supply should never drop below sum of known balances
+        // (other addresses may hold tokens too, so supply >= alice + bob)
+        assertGe(token.totalSupply(), token.balanceOf(alice) + token.balanceOf(bob));
     }
 }

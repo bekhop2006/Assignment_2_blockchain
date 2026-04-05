@@ -1,0 +1,40 @@
+name: Test Smart Contracts
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+
+    - name: Install Dependencies
+      run: forge install
+
+    - name: Compile Contracts
+      run: forge build --sizes
+
+    - name: Run Tests
+      run: forge test -vvv --no-match-test "Fork"
+
+    - name: Generate Gas Report
+      run: forge test --gas-report --no-match-test "Fork"
+
+    - name: Generate Gas Snapshot
+      run: forge snapshot --no-match-test "Fork"
+
+    - name: Install Slither
+      run: pip install slither-analyzer
+
+    - name: Run Slither Analysis
+      run: slither . --filter-paths "lib/" || true

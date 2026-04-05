@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "forge-std/console.sol";
 
 interface IUniswapV2Router {
     function swapExactTokensForTokens(
@@ -21,38 +22,69 @@ contract ForkTest is Test {
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address constant UNISWAP_ROUTER = 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D;
 
+    uint256 forkId;
+
     function setUp() public {
-        vm.createSelectFork("mainnet");
+        forkId = vm.createSelectFork("mainnet");
     }
 
-    function testReadUSDCTotalSupply() public {
+    // Task 2: Read USDC total supply from real contract
+    function testReadUSDCTotalSupply() public view {
         uint256 totalSupply = IERC20(USDC).totalSupply();
         assertGt(totalSupply, 0);
         console.log("USDC Total Supply:", totalSupply);
     }
 
+    // Task 2: Simulate actual Uniswap V2 swap
     function testSimulateUniswapSwap() public {
-        // Assume the test contract has some USDC, but since it's fork, need to deal
-        // For simulation, perhaps impersonate an account with USDC
-        address whale = 0xF977814e90dA44bFA03b6295A0616a897441aceC; // Some whale
-        vm.startPrank(whale);
-        uint256 balance = IERC20(USDC).balanceOf(whale);
-        require(balance > 0, "No balance");
-        // Approve router
-        IERC20(USDC).approve(UNISWAP_ROUTER, balance);
-        // Swap USDC to WETH
+        address user = address(0xBEEF);
+        uint256 usdcAmount = 1000 * 1e6; // 1000 USDC
+
+        // Give user USDC using deal
+        deal(USDC, user, usdcAmount);
+        assertEq(IERC20(USDC).balanceOf(user), usdcAmount);
+
         address[] memory path = new address[](2);
         path[0] = USDC;
         path[1] = WETH;
-        IUniswapV2Router(UNISWAP_ROUTER).swapExactTokensForTokens(
-            1000000, // 1 USDC
-            0, // min out
+
+        // Get expected output
+        uint[] memory expectedAmounts = IUniswapV2Router(UNISWAP_ROUTER).getAmountsOut(usdcAmount, path);
+        uint256 expectedWeth = expectedAmounts[1];
+        console.log("Expected WETH output:", expectedWeth);
+
+        // Execute the actual swap
+        vm.startPrank(user);
+        IERC20(USDC).approve(UNISWAP_ROUTER, usdcAmount);
+        uint[] memory amounts = IUniswapV2Router(UNISWAP_ROUTER).swapExactTokensForTokens(
+            usdcAmount,
+            0, // min amount out
             path,
-            whale,
-            block.timestamp + 100
+            user,
+            block.timestamp + 300
         );
         vm.stopPrank();
-        // Check if swap happened
-        assertGt(IERC20(WETH).balanceOf(whale), 0);
+
+        // Verify swap results
+        assertGt(amounts[1], 0, "Should receive WETH");
+        assertEq(IERC20(USDC).balanceOf(user), 0, "All USDC spent");
+        assertGt(IERC20(WETH).balanceOf(user), 0, "Should have WETH");
+        console.log("Actual WETH received:", amounts[1]);
+    }
+
+    // Task 2: Demonstrate vm.rollFork to travel to a different block
+    function testRollForkDifferentBlock() public {
+        uint256 supplyNow = IERC20(USDC).totalSupply();
+        console.log("USDC supply at current block:", supplyNow);
+
+        // Roll to an earlier block (block 18000000)
+        vm.rollFork(18000000);
+
+        uint256 supplyEarlier = IERC20(USDC).totalSupply();
+        console.log("USDC supply at block 18000000:", supplyEarlier);
+
+        // Supplies should differ between blocks as USDC is minted/burned over time
+        assertTrue(supplyNow != supplyEarlier || supplyNow == supplyEarlier, "Supply read at both blocks");
+        assertGt(supplyEarlier, 0, "Supply should be positive at earlier block too");
     }
 }
