@@ -25,13 +25,13 @@ jobs:
       run: forge build --sizes
 
     - name: Run Tests
-      run: forge test -vvv --no-match-test "Fork"
+      run: forge test -vvv --no-match-contract "ForkTest"
 
     - name: Generate Gas Report
-      run: forge test --gas-report --no-match-test "Fork"
+      run: forge test --gas-report --no-match-contract "ForkTest"
 
     - name: Generate Gas Snapshot
-      run: forge snapshot --no-match-test "Fork"
+      run: forge snapshot --no-match-contract "ForkTest"
 
     - name: Install Slither
       run: pip install slither-analyzer
